@@ -59,7 +59,8 @@ public interface LogRecord {
    *
    * <p>This method is equivalent to Span.addEvent and provides a path for moving to using LogRecord
    * for Span Events as against Span.Event. The event name itself is set as another attribute with
-   * the semantic convention of "otel.event.name" as the attribute key.
+   * the semantic convention of "event.name" as the attribute key. If there is an attribute
+   * with this key in the attributes parameter it will be overridden.
    *
    * @param name the name of the event.
    * @param attributes the attributes that will be added; these are associated with this event, not

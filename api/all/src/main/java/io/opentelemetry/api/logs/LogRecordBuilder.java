@@ -7,14 +7,13 @@ package io.opentelemetry.api.logs;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.context.Context;
-import io.opentelemetry.api.logs.Severity;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Used to construct and emit LogRecord based events from an {@link EventEmitter}.
+ * Used to construct and emit LogRecord based events from an {@link Logger}.
  *
- * <p>Obtain a {@link LogRecordBuilder} via {@link EventEmitter#eventBuilder(String)}, add properties using the
+ * <p>Obtain a {@link LogRecordBuilder} via {@link Logger#eventBuilder(String)}, add properties using the
  * setters, and emit the log record by calling {@link #emit()}.
  */
 public interface LogRecordBuilder {
@@ -46,7 +45,7 @@ public interface LogRecordBuilder {
   /** Set the attributes. */
   LogRecordBuilder setAttributes(Attributes attributes);
 
-  /** Build and return {@link LogRecord} */
+  /** Build and return {@link LogRecord}. */
   LogRecord build();
 
   /** Mark the completion of building LogRecord.

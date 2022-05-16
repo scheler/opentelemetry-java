@@ -7,21 +7,21 @@ package io.opentelemetry.api.logs;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.context.Context;
-import javax.annotation.concurrent.ThreadSafe;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.concurrent.ThreadSafe;
 
-/** No-op implementations of {@link EventEmitter}. */
+/** No-op implementations of {@link DefaultLogger}. */
 @ThreadSafe
-final class DefaultEventEmitter implements EventEmitter {
+final class DefaultLogger implements Logger {
 
-  private static final EventEmitter INSTANCE = new DefaultEventEmitter();
+  private static final DefaultLogger INSTANCE = new DefaultLogger();
 
-  static EventEmitter getInstance() {
+  static DefaultLogger getInstance() {
     return INSTANCE;
   }
 
-  private DefaultEventEmitter() {}
+  private DefaultLogger() {}
 
   @Override
   public LogRecordBuilder eventBuilder(String eventName) {
@@ -45,7 +45,7 @@ final class DefaultEventEmitter implements EventEmitter {
 
   // Noop implementation of LogRecordBuilder.
   private static final class NoopLogRecordBuilder implements LogRecordBuilder {
-    final static NoopLogRecord LOGRECORD_INSTANCE = new NoopLogRecord();
+    static final NoopLogRecord LOGRECORD_INSTANCE = new NoopLogRecord();
     static NoopLogRecordBuilder create() {
       return new NoopLogRecordBuilder();
     }

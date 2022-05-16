@@ -5,18 +5,18 @@
 
 package io.opentelemetry.api.logs;
 
-import javax.annotation.concurrent.ThreadSafe;
 import io.opentelemetry.api.common.Attributes;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
- * A {@link EventEmitter} is the entry point into an event pipeline.
+ * A {@link Logger} is the entry point into an event pipeline.
  *
  * <p>Obtain a LogRecord builder via {@link #eventBuilder(String)}, add properties using the setters.
  */
 @ThreadSafe
-public interface EventEmitter {
+public interface Logger {
 
   /**
    * Return a {@link LogRecordBuilder} instance with the event.name attribute set to eventName.
@@ -24,6 +24,7 @@ public interface EventEmitter {
    * <p>Build the LogRecord using the {@link LogRecordBuilder} setters.
    */
   LogRecordBuilder eventBuilder(String eventName);
+
 
   /**
    * Create an Event based on LogRecord

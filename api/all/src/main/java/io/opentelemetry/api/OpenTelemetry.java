@@ -5,6 +5,9 @@
 
 package io.opentelemetry.api;
 
+import io.opentelemetry.api.logs.Logger;
+import io.opentelemetry.api.logs.LoggerBuilder;
+import io.opentelemetry.api.logs.LoggerProvider;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.metrics.MeterBuilder;
 import io.opentelemetry.api.metrics.MeterProvider;
@@ -111,6 +114,18 @@ public interface OpenTelemetry {
    */
   default MeterBuilder meterBuilder(String instrumentationScopeName) {
     return getMeterProvider().meterBuilder(instrumentationScopeName);
+  }
+
+  default LoggerProvider getLoggerProvider() {
+    return LoggerProvider.noop();
+  }
+
+  default Logger getLogger(String instrumentationScopeName) {
+    return getLoggerProvider().get(instrumentationScopeName);
+  }
+
+  default LoggerBuilder loggerBuilder(String instrumentationScopeName) {
+    return getLoggerProvider().loggerBuilder(instrumentationScopeName);
   }
 
   /** Returns the {@link ContextPropagators} for this {@link OpenTelemetry}. */

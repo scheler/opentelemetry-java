@@ -5,6 +5,8 @@
 
 package io.opentelemetry.api.logs;
 
+import io.opentelemetry.api.common.Attributes;
+
 class DefaultLoggerBuilder implements LoggerBuilder {
   private static final DefaultLoggerBuilder INSTANCE = new DefaultLoggerBuilder();
 
@@ -19,6 +21,21 @@ class DefaultLoggerBuilder implements LoggerBuilder {
 
   @Override
   public LoggerBuilder setInstrumentationVersion(String instrumentationScopeVersion) {
+    return this;
+  }
+
+  @Override
+  public LoggerBuilder setEventDomain(String eventDomain) {
+    return this;
+  }
+
+  @Override
+  public LoggerBuilder setSetContext(boolean setContext) {
+    return this;
+  }
+
+  @Override
+  public LoggerBuilder setAttributes(Attributes attributes) {
     return this;
   }
 

@@ -29,6 +29,11 @@ final class DefaultLogger implements Logger {
   }
 
   @Override
+  public LogRecordBuilder logRecordBuilder() {
+    return NoopLogRecordBuilder.create();
+  }
+
+  @Override
   public void logEvent(String name) {}
 
   @Override
@@ -41,16 +46,34 @@ final class DefaultLogger implements Logger {
   public void logEvent(String name, Attributes attributes, Instant timestamp) {}
 
   @Override
+  public void logEvent(String eventName, String description) {}
+
+  @Override
+  public void logEvent(String eventName, String description, Attributes attributes) {}
+
+  @Override
+  public void logEvent(
+      String eventName, String description, Attributes attributes, long timestamp, TimeUnit unit) {}
+
+  @Override
+  public void logEvent(
+      String eventName, String description, Attributes attributes, Instant timestamp) {}
+
+  @Override
+  public void logException(Throwable t) {}
+
+  @Override
   public void logException(Throwable t, Attributes attributes) {}
 
   // Noop implementation of LogRecordBuilder.
   private static final class NoopLogRecordBuilder implements LogRecordBuilder {
     static final NoopLogRecord LOGRECORD_INSTANCE = new NoopLogRecord();
+
     static NoopLogRecordBuilder create() {
       return new NoopLogRecordBuilder();
     }
 
-    private NoopLogRecordBuilder(){}
+    private NoopLogRecordBuilder() {}
 
     @Override
     public LogRecordBuilder setEpoch(long timestamp, TimeUnit unit) {
@@ -93,9 +116,7 @@ final class DefaultLogger implements Logger {
     }
 
     @Override
-    public void emit() {
-
-    }
+    public void emit() {}
 
     @Override
     public LogRecordBuilder setEvent(String name, Attributes attributes) {
@@ -103,7 +124,7 @@ final class DefaultLogger implements Logger {
     }
 
     @Override
-    public LogRecordBuilder recordException(Throwable t, Attributes additionalAttributes){
+    public LogRecordBuilder recordException(Throwable t, Attributes additionalAttributes) {
       return this;
     }
   }
@@ -146,10 +167,10 @@ final class DefaultLogger implements Logger {
     }
 
     @Override
-    public void emit() { }
+    public void emit() {}
 
     @Override
-    public LogRecord setEvent(String name, Attributes attributes){
+    public LogRecord setEvent(String name, Attributes attributes) {
       return this;
     }
 
@@ -157,7 +178,5 @@ final class DefaultLogger implements Logger {
     public LogRecord recordException(Throwable t, Attributes additionalAttributes) {
       return this;
     }
-
   }
-
 }

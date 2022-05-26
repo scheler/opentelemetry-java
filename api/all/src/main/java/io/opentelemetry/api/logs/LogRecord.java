@@ -13,21 +13,23 @@ import java.util.concurrent.TimeUnit;
 /**
  * Used to construct and emit logs from a {@link Logger}.
  *
- * <p>Obtain a {@link LogRecordBuilder} via {@link Logger#eventBuilder(String)}, add properties using the
- * setters, and emit the event by calling {@link #emit()}.
+ * <p>Obtain a {@link LogRecordBuilder} via {@link Logger#eventBuilder(String)}, add properties
+ * using the setters, and emit the event by calling {@link #emit()}.
  */
 public interface LogRecord {
 
-  /** Set the epoch timestamp using the timestamp and unit.
+  /**
+   * Set the epoch timestamp using the timestamp and unit.
    *
    * <p>This is the time when the event occured.
-   * */
+   */
   LogRecord setEpoch(long timestamp, TimeUnit unit);
 
-  /** Set the epoch timestamp using the instant.
+  /**
+   * Set the epoch timestamp using the instant.
    *
    * <p>This is the time when the event occured.
-   * */
+   */
   LogRecord setEpoch(Instant instant);
 
   /** Set the context. */
@@ -42,25 +44,28 @@ public interface LogRecord {
   /** Set the body string. */
   LogRecord setBody(String body);
 
-  /** Set the attributes.
+  /**
+   * Set the attributes.
    *
    * <p>Merges with the attributes already present
-   * */
+   */
   LogRecord setAttributes(Attributes attributes);
 
-  /** Mark the completion of building LogRecord.
+  /**
+   * Mark the completion of building LogRecord.
    *
    * <p>Only the timing of the first emit call for a given {@code LogRecord} will be recorded in the
    * <i>observed timestamp</i>, and implementations are free to ignore all further calls.
-   * */
+   */
   void emit();
 
-  /** Set the LogRecord as being an event using name as the event name, along with the attributes.
+  /**
+   * Set the LogRecord as being an event using name as the event name, along with the attributes.
    *
    * <p>This method is equivalent to Span.addEvent and provides a path for moving to using LogRecord
    * for Span Events as against Span.Event. The event name itself is set as another attribute with
-   * the semantic convention of "event.name" as the attribute key. If there is an attribute
-   * with this key in the attributes parameter it will be overridden.
+   * the semantic convention of "event.name" as the attribute key. If there is an attribute with
+   * this key in the attributes parameter it will be overridden.
    *
    * @param name the name of the event.
    * @param attributes the attributes that will be added; these are associated with this event, not

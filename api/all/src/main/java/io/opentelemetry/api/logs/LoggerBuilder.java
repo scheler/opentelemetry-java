@@ -5,9 +5,9 @@
 
 package io.opentelemetry.api.logs;
 
-/**
- * Builder class for creating {@link Logger} instances.
- */
+import io.opentelemetry.api.common.Attributes;
+
+/** Builder class for creating {@link Logger} instances. */
 public interface LoggerBuilder {
 
   /**
@@ -25,6 +25,12 @@ public interface LoggerBuilder {
    * @return this
    */
   LoggerBuilder setInstrumentationVersion(String instrumentationScopeVersion);
+
+  LoggerBuilder setEventDomain(String eventDomain);
+
+  LoggerBuilder setSetContext(boolean setContext);
+
+  LoggerBuilder setAttributes(Attributes attributes);
 
   /**
    * Gets or creates a {@link Logger} instance.

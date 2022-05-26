@@ -26,5 +26,20 @@ class DefaultLoggerProvider implements LoggerProvider {
     return DefaultLogger.getInstance();
   }
 
+  @Override
+  public Logger get(
+      String instrumentationScopeName, String instrumentationScopeVersion, String eventDomain) {
+    return DefaultLogger.getInstance();
+  }
+
+  @Override
+  public Logger get(
+      String instrumentationScopeName,
+      String instrumentationScopeVersion,
+      String eventDomain,
+      boolean setContext) {
+    return DefaultLogger.getInstance();
+  }
+
   private DefaultLoggerProvider() {}
 }

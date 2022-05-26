@@ -119,7 +119,7 @@ public final class PrometheusHttpServer implements Closeable, MetricReader {
   }
 
   @Override
-  public CompletableResultCode flush() {
+  public CompletableResultCode forceFlush() {
     return CompletableResultCode.ofSuccess();
   }
 
@@ -145,6 +145,11 @@ public final class PrometheusHttpServer implements Closeable, MetricReader {
   @Override
   public void close() {
     shutdown().join(10, TimeUnit.SECONDS);
+  }
+
+  @Override
+  public String toString() {
+    return "PrometheusHttpServer{address=" + server.getAddress() + "}";
   }
 
   // Visible for testing.

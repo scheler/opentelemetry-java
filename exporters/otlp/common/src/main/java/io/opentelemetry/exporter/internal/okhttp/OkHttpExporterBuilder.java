@@ -31,12 +31,14 @@ import okhttp3.OkHttpClient;
 public final class OkHttpExporterBuilder<T extends Marshaler> {
   public static final long DEFAULT_TIMEOUT_SECS = 10;
 
+  private final String exporterName;
   private final String type;
 
   private String endpoint;
 
   private long timeoutNanos = TimeUnit.SECONDS.toNanos(DEFAULT_TIMEOUT_SECS);
   private boolean compressionEnabled = false;
+  private boolean exportAsJson = false;
   @Nullable private Headers.Builder headersBuilder;
   @Nullable private byte[] trustedCertificatesPem;
   @Nullable private byte[] privateKeyPem;
@@ -44,7 +46,8 @@ public final class OkHttpExporterBuilder<T extends Marshaler> {
   @Nullable private RetryPolicy retryPolicy;
   private MeterProvider meterProvider = MeterProvider.noop();
 
-  public OkHttpExporterBuilder(String type, String defaultEndpoint) {
+  public OkHttpExporterBuilder(String exporterName, String type, String defaultEndpoint) {
+    this.exporterName = exporterName;
     this.type = type;
 
     endpoint = defaultEndpoint;
@@ -101,6 +104,11 @@ public final class OkHttpExporterBuilder<T extends Marshaler> {
     return this;
   }
 
+  public OkHttpExporterBuilder<T> exportAsJson() {
+    this.exportAsJson = true;
+    return this;
+  }
+
   public OkHttpExporter<T> build() {
     OkHttpClient.Builder clientBuilder =
         new OkHttpClient.Builder()
@@ -130,6 +138,13 @@ public final class OkHttpExporterBuilder<T extends Marshaler> {
     }
 
     return new OkHttpExporter<>(
-        type, clientBuilder.build(), meterProvider, endpoint, headers, compressionEnabled);
+        exporterName,
+        type,
+        clientBuilder.build(),
+        meterProvider,
+        endpoint,
+        headers,
+        compressionEnabled,
+        exportAsJson);
   }
 }

@@ -124,7 +124,7 @@ class PeriodicMetricReaderTest {
     reader.register(metricProducer);
 
     try {
-      assertThat(reader.flush().join(10, TimeUnit.SECONDS).isSuccess()).isTrue();
+      assertThat(reader.forceFlush().join(10, TimeUnit.SECONDS).isSuccess()).isTrue();
       verify(metricProducer).collectAllMetrics();
       assertThat(waitingMetricExporter.exportTimes.size()).isEqualTo(0);
     } finally {
@@ -141,7 +141,7 @@ class PeriodicMetricReaderTest {
             .build();
 
     reader.register(metricProducer);
-    assertThat(reader.flush().join(10, TimeUnit.SECONDS).isSuccess()).isTrue();
+    assertThat(reader.forceFlush().join(10, TimeUnit.SECONDS).isSuccess()).isTrue();
 
     try {
       assertThat(waitingMetricExporter.waitForNumberOfExports(1))
@@ -206,6 +206,21 @@ class PeriodicMetricReaderTest {
     assertThatThrownBy(() -> PeriodicMetricReader.builder(metricExporter).setExecutor(null))
         .isInstanceOf(NullPointerException.class)
         .hasMessage("executor");
+  }
+
+  @Test
+  void stringRepresentation() {
+    when(metricExporter.toString()).thenReturn("MockMetricExporter{}");
+    assertThat(
+            PeriodicMetricReader.builder(metricExporter)
+                .setInterval(Duration.ofSeconds(1))
+                .build()
+                .toString())
+        .isEqualTo(
+            "PeriodicMetricReader{"
+                + "exporter=MockMetricExporter{}, "
+                + "intervalNanos=1000000000"
+                + "}");
   }
 
   private static class WaitingMetricExporter implements MetricExporter {

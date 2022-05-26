@@ -65,7 +65,7 @@ public final class PeriodicMetricReader implements MetricReader {
   }
 
   @Override
-  public CompletableResultCode flush() {
+  public CompletableResultCode forceFlush() {
     return scheduled.doRun();
   }
 
@@ -104,6 +104,16 @@ public final class PeriodicMetricReader implements MetricReader {
   public void register(CollectionRegistration registration) {
     this.metricProducer = MetricProducer.asMetricProducer(registration);
     start();
+  }
+
+  @Override
+  public String toString() {
+    return "PeriodicMetricReader{"
+        + "exporter="
+        + exporter
+        + ", intervalNanos="
+        + intervalNanos
+        + '}';
   }
 
   void start() {

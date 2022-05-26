@@ -5,7 +5,7 @@
 
 package io.opentelemetry.sdk.metrics;
 
-import static io.opentelemetry.sdk.testing.assertj.MetricAssertions.assertThat;
+import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
 
 import io.github.netmikey.logunit.api.LogCapturer;
 import io.opentelemetry.internal.testing.slf4j.SuppressLogger;
@@ -13,7 +13,6 @@ import io.opentelemetry.sdk.common.InstrumentationScopeInfo;
 import io.opentelemetry.sdk.metrics.internal.state.MetricStorageRegistry;
 import io.opentelemetry.sdk.metrics.internal.view.ViewRegistry;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
-import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,10 +33,7 @@ class IdentityTest {
   @BeforeEach
   void setup() {
     reader = InMemoryMetricReader.createDelta();
-    builder =
-        SdkMeterProvider.builder()
-            .registerMetricReader(reader)
-            .setMinimumCollectionInterval(Duration.ZERO);
+    builder = SdkMeterProvider.builder().registerMetricReader(reader);
   }
 
   @Test
@@ -55,9 +51,8 @@ class IdentityTest {
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(20)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(20))));
 
     meterProvider.get("meter2").counterBuilder("counter2").ofDoubles().build().add(10);
     meterProvider.get("meter2").counterBuilder("counter2").ofDoubles().build().add(10);
@@ -68,9 +63,8 @@ class IdentityTest {
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter2"))
                     .hasName("counter2")
-                    .hasDoubleSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(20)));
+                    .hasDoubleSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(20))));
 
     meterProvider
         .get("meter3")
@@ -92,9 +86,8 @@ class IdentityTest {
                     .hasInstrumentationScope(forMeter("meter3"))
                     .hasName("counter3")
                     .hasDescription("description3")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(20)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(20))));
 
     meterProvider.get("meter4").counterBuilder("counter4").setUnit("unit4").build().add(10);
     meterProvider.get("meter4").counterBuilder("counter4").setUnit("unit4").build().add(10);
@@ -106,9 +99,8 @@ class IdentityTest {
                     .hasInstrumentationScope(forMeter("meter4"))
                     .hasName("counter4")
                     .hasUnit("unit4")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(20)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(20))));
 
     assertThat(metricStorageRegistryLogs.getEvents()).hasSize(0);
   }
@@ -126,16 +118,14 @@ class IdentityTest {
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
             metricData ->
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter2")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))));
 
     assertThat(metricStorageRegistryLogs.getEvents()).hasSize(0);
   }
@@ -154,16 +144,14 @@ class IdentityTest {
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
             metricData ->
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter2"))
                     .hasName("counter1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))));
 
     meterProvider.get("meter1").counterBuilder("counter1").build().add(10);
     meterProvider
@@ -180,17 +168,15 @@ class IdentityTest {
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
             metricData ->
                 assertThat(metricData)
                     .hasInstrumentationScope(
                         InstrumentationScopeInfo.create("meter1", "version1", null))
                     .hasName("counter1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))));
 
     meterProvider
         .meterBuilder("meter1")
@@ -215,17 +201,15 @@ class IdentityTest {
                     .hasInstrumentationScope(
                         InstrumentationScopeInfo.create("meter1", "version1", null))
                     .hasName("counter1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
             metricData ->
                 assertThat(metricData)
                     .hasInstrumentationScope(
                         InstrumentationScopeInfo.create("meter1", "version1", "schema1"))
                     .hasName("counter1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))));
 
     assertThat(metricStorageRegistryLogs.getEvents()).hasSize(0);
   }
@@ -251,16 +235,14 @@ class IdentityTest {
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
                     .hasDescription("description1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
             metricData -> {
               assertThat(metricData)
                   .hasInstrumentationScope(forMeter("meter1"))
                   .hasName("counter1")
-                  .hasLongSum()
-                  .points()
-                  .satisfiesExactly(point -> assertThat(point).hasValue(10));
+                  .hasLongSumSatisfying(
+                      sum -> sum.hasPointsSatisfying(point -> point.hasValue(10)));
               assertThat(metricData.getDescription()).isBlank();
             });
 
@@ -287,18 +269,15 @@ class IdentityTest {
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
                     .hasUnit("unit1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
-            metricData -> {
-              assertThat(metricData)
-                  .hasInstrumentationScope(forMeter("meter1"))
-                  .hasName("counter1")
-                  .hasLongSum()
-                  .points()
-                  .satisfiesExactly(point -> assertThat(point).hasValue(10));
-              assertThat(metricData.getUnit()).isEqualTo("1");
-            });
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
+            metricData ->
+                assertThat(metricData)
+                    .hasInstrumentationScope(forMeter("meter1"))
+                    .hasName("counter1")
+                    .hasUnit("")
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))));
 
     assertThat(metricStorageRegistryLogs.getEvents())
         .allSatisfy(
@@ -322,18 +301,15 @@ class IdentityTest {
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
-                    .hasLongSum()
-                    .isNotMonotonic()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasLongSumSatisfying(
+                        sum ->
+                            sum.isNotMonotonic().hasPointsSatisfying(point -> point.hasValue(10))),
             metricData ->
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
-                    .hasLongSum()
-                    .isMonotonic()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.isMonotonic().hasPointsSatisfying(point -> point.hasValue(10))));
 
     assertThat(metricStorageRegistryLogs.getEvents())
         .allSatisfy(
@@ -357,16 +333,14 @@ class IdentityTest {
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
-                    .hasDoubleSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasDoubleSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
             metricData ->
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))));
 
     assertThat(metricStorageRegistryLogs.getEvents())
         .allSatisfy(
@@ -394,9 +368,8 @@ class IdentityTest {
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
                     .hasDescription("description1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(20)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(20))));
 
     assertThat(metricStorageRegistryLogs.getEvents()).hasSize(0);
   }
@@ -420,17 +393,15 @@ class IdentityTest {
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
                     .hasDescription("description1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
             metricData ->
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter2"))
                     .hasName("counter1")
                     .hasDescription("description1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))));
 
     assertThat(metricStorageRegistryLogs.getEvents()).hasSize(0);
   }
@@ -454,17 +425,15 @@ class IdentityTest {
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
                     .hasDescription("description1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
             metricData ->
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter2")
                     .hasDescription("description1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))));
 
     assertThat(metricStorageRegistryLogs.getEvents()).hasSize(0);
   }
@@ -488,16 +457,14 @@ class IdentityTest {
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
                     .hasDescription("description1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
             metricData -> {
               assertThat(metricData)
                   .hasInstrumentationScope(forMeter("meter1"))
                   .hasName("counter2")
-                  .hasLongSum()
-                  .points()
-                  .satisfiesExactly(point -> assertThat(point).hasValue(10));
+                  .hasLongSumSatisfying(
+                      sum -> sum.hasPointsSatisfying(point -> point.hasValue(10)));
               assertThat(metricData.getDescription()).isBlank();
             });
 
@@ -523,16 +490,14 @@ class IdentityTest {
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
                     .hasDescription("description1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
             metricData -> {
               assertThat(metricData)
                   .hasInstrumentationScope(forMeter("meter1"))
                   .hasName("counter2")
-                  .hasLongSum()
-                  .points()
-                  .satisfiesExactly(point -> assertThat(point).hasValue(10));
+                  .hasLongSumSatisfying(
+                      sum -> sum.hasPointsSatisfying(point -> point.hasValue(10)));
               assertThat(metricData.getDescription()).isBlank();
             });
 
@@ -558,16 +523,14 @@ class IdentityTest {
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
                     .hasDescription("description1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
             metricData -> {
               assertThat(metricData)
                   .hasInstrumentationScope(forMeter("meter2"))
                   .hasName("counter1")
-                  .hasLongSum()
-                  .points()
-                  .satisfiesExactly(point -> assertThat(point).hasValue(10));
+                  .hasLongSumSatisfying(
+                      sum -> sum.hasPointsSatisfying(point -> point.hasValue(10)));
               assertThat(metricData.getDescription()).isBlank();
             });
 
@@ -606,17 +569,15 @@ class IdentityTest {
                         InstrumentationScopeInfo.create("meter1", "version1", null))
                     .hasName("counter1")
                     .hasDescription("description1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
             metricData -> {
               assertThat(metricData)
                   .hasInstrumentationScope(
                       InstrumentationScopeInfo.create("meter1", "version2", null))
                   .hasName("counter1")
-                  .hasLongSum()
-                  .points()
-                  .satisfiesExactly(point -> assertThat(point).hasValue(10));
+                  .hasLongSumSatisfying(
+                      sum -> sum.hasPointsSatisfying(point -> point.hasValue(10)));
               assertThat(metricData.getDescription()).isBlank();
             });
 
@@ -655,17 +616,15 @@ class IdentityTest {
                         InstrumentationScopeInfo.create("meter1", null, "schema1"))
                     .hasName("counter1")
                     .hasDescription("description1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
             metricData -> {
               assertThat(metricData)
                   .hasInstrumentationScope(
                       InstrumentationScopeInfo.create("meter1", null, "schema2"))
                   .hasName("counter1")
-                  .hasLongSum()
-                  .points()
-                  .satisfiesExactly(point -> assertThat(point).hasValue(10));
+                  .hasLongSumSatisfying(
+                      sum -> sum.hasPointsSatisfying(point -> point.hasValue(10)));
               assertThat(metricData.getDescription()).isBlank();
             });
 
@@ -694,25 +653,22 @@ class IdentityTest {
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
                     .hasDescription("description1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
             metricData -> {
               assertThat(metricData)
                   .hasInstrumentationScope(forMeter("meter1"))
                   .hasName("counter2")
-                  .hasLongSum()
-                  .points()
-                  .satisfiesExactly(point -> assertThat(point).hasValue(10));
+                  .hasLongSumSatisfying(
+                      sum -> sum.hasPointsSatisfying(point -> point.hasValue(10)));
               assertThat(metricData.getDescription()).isBlank();
             },
             metricData -> {
               assertThat(metricData)
                   .hasInstrumentationScope(forMeter("meter2"))
                   .hasName("counter1")
-                  .hasLongSum()
-                  .points()
-                  .satisfiesExactly(point -> assertThat(point).hasValue(10));
+                  .hasLongSumSatisfying(
+                      sum -> sum.hasPointsSatisfying(point -> point.hasValue(10)));
               assertThat(metricData.getDescription()).isBlank();
             });
 
@@ -744,17 +700,15 @@ class IdentityTest {
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
                     .hasDescription("description1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(20)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(20))),
             metricData ->
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
                     .hasDescription("description2")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(20)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(20))));
 
     assertThat(metricStorageRegistryLogs.getEvents())
         .allSatisfy(
@@ -787,16 +741,14 @@ class IdentityTest {
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(20)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(20))),
             metricData ->
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
-                    .hasDoubleHistogram()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasSum(20)));
+                    .hasHistogramSatisfying(
+                        histogram -> histogram.hasPointsSatisfying(point -> point.hasSum(20))));
 
     assertThat(metricStorageRegistryLogs.getEvents())
         .allSatisfy(
@@ -827,16 +779,14 @@ class IdentityTest {
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter-new")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
             metricData ->
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter-new")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))));
 
     assertThat(metricStorageRegistryLogs.getEvents())
         .allSatisfy(
@@ -865,16 +815,14 @@ class IdentityTest {
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter-new")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))),
             metricData ->
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter2"))
                     .hasName("counter-new")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))));
 
     assertThat(metricStorageRegistryLogs.getEvents()).hasSize(0);
   }
@@ -908,16 +856,14 @@ class IdentityTest {
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
                     .hasDescription("description1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(20)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(20))),
             metricData ->
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1-histogram")
-                    .hasDoubleHistogram()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasSum(20)));
+                    .hasHistogramSatisfying(
+                        histogram -> histogram.hasPointsSatisfying(point -> point.hasSum(20))));
 
     assertThat(metricStorageRegistryLogs.getEvents()).hasSize(0);
     assertThat(viewRegistryLogs.getEvents()).hasSize(0);
@@ -949,16 +895,14 @@ class IdentityTest {
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(1)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(1))),
             metricData ->
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter2")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(1)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(1))));
 
     assertThat(metricStorageRegistryLogs.getEvents()).hasSize(0);
   }
@@ -988,16 +932,14 @@ class IdentityTest {
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter1")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(1)),
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(1))),
             metricData ->
                 assertThat(metricData)
                     .hasInstrumentationScope(forMeter("meter1"))
                     .hasName("counter2")
-                    .hasLongSum()
-                    .points()
-                    .satisfiesExactly(point -> assertThat(point).hasValue(10)));
+                    .hasLongSumSatisfying(
+                        sum -> sum.hasPointsSatisfying(point -> point.hasValue(10))));
 
     assertThat(metricStorageRegistryLogs.getEvents()).hasSize(0);
     assertThat(viewRegistryLogs.getEvents())

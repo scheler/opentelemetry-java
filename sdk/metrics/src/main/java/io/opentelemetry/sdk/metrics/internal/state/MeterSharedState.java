@@ -5,19 +5,21 @@
 
 package io.opentelemetry.sdk.metrics.internal.state;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 import io.opentelemetry.api.internal.GuardedBy;
-import io.opentelemetry.api.metrics.ObservableDoubleMeasurement;
-import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.sdk.common.InstrumentationScopeInfo;
+import io.opentelemetry.sdk.metrics.Aggregation;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.internal.descriptor.InstrumentDescriptor;
-import io.opentelemetry.sdk.metrics.internal.export.CollectionInfo;
+import io.opentelemetry.sdk.metrics.internal.export.RegisteredReader;
+import io.opentelemetry.sdk.metrics.internal.view.RegisteredView;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * State for a {@code Meter}.
@@ -31,33 +33,45 @@ public class MeterSharedState {
   private final Object callbackLock = new Object();
 
   @GuardedBy("callbackLock")
-  private final List<CallbackRegistration<?>> callbackRegistrations = new ArrayList<>();
+  private final List<CallbackRegistration> callbackRegistrations = new ArrayList<>();
+
+  private final Map<RegisteredReader, MetricStorageRegistry> readerStorageRegistries;
 
   private final InstrumentationScopeInfo instrumentationScopeInfo;
-  private final MetricStorageRegistry metricStorageRegistry;
 
   private MeterSharedState(
-      InstrumentationScopeInfo instrumentationScopeInfo,
-      MetricStorageRegistry metricStorageRegistry) {
+      InstrumentationScopeInfo instrumentationScopeInfo, List<RegisteredReader> registeredReaders) {
     this.instrumentationScopeInfo = instrumentationScopeInfo;
-    this.metricStorageRegistry = metricStorageRegistry;
+    this.readerStorageRegistries =
+        registeredReaders.stream()
+            .collect(toMap(Function.identity(), unused -> new MetricStorageRegistry()));
   }
 
-  public static MeterSharedState create(InstrumentationScopeInfo instrumentationScopeInfo) {
-    return new MeterSharedState(instrumentationScopeInfo, new MetricStorageRegistry());
+  public static MeterSharedState create(
+      InstrumentationScopeInfo instrumentationScopeInfo, List<RegisteredReader> registeredReaders) {
+    return new MeterSharedState(instrumentationScopeInfo, registeredReaders);
   }
 
   /**
    * Unregister the callback.
    *
-   * <p>Callbacks are originally registered via {@link
-   * #registerDoubleAsynchronousInstrument(InstrumentDescriptor, MeterProviderSharedState,
-   * Consumer)} or {@link #registerLongAsynchronousInstrument(InstrumentDescriptor,
-   * MeterProviderSharedState, Consumer)}.
+   * <p>Callbacks are originally registered via {@link #registerCallback(CallbackRegistration)}.
    */
-  public void removeCallback(CallbackRegistration<?> callbackRegistration) {
+  public void removeCallback(CallbackRegistration callbackRegistration) {
     synchronized (callbackLock) {
       this.callbackRegistrations.remove(callbackRegistration);
+    }
+  }
+
+  /**
+   * Register the callback.
+   *
+   * <p>The callback will be invoked once per collection until unregistered via {@link
+   * #removeCallback(CallbackRegistration)}.
+   */
+  public final void registerCallback(CallbackRegistration callbackRegistration) {
+    synchronized (callbackLock) {
+      callbackRegistrations.add(callbackRegistration);
     }
   }
 
@@ -67,38 +81,31 @@ public class MeterSharedState {
     return instrumentationScopeInfo;
   }
 
-  /** Returns the metric storage for metrics in this {@code Meter}. */
-  MetricStorageRegistry getMetricStorageRegistry() {
-    return metricStorageRegistry;
-  }
-
   /** Collects all accumulated metric stream points. */
   public List<MetricData> collectAll(
-      CollectionInfo collectionInfo,
+      RegisteredReader registeredReader,
       MeterProviderSharedState meterProviderSharedState,
-      long epochNanos,
-      boolean suppressSynchronousCollection) {
-    List<CallbackRegistration<?>> currentRegisteredCallbacks;
+      long epochNanos) {
+    List<CallbackRegistration> currentRegisteredCallbacks;
     synchronized (callbackLock) {
       currentRegisteredCallbacks = new ArrayList<>(callbackRegistrations);
     }
     // Collections across all readers are sequential
     synchronized (collectLock) {
-      for (CallbackRegistration<?> callbackRegistration : currentRegisteredCallbacks) {
-        callbackRegistration.invokeCallback();
+      for (CallbackRegistration callbackRegistration : currentRegisteredCallbacks) {
+        callbackRegistration.invokeCallback(registeredReader);
       }
 
-      Collection<MetricStorage> metrics = getMetricStorageRegistry().getMetrics();
-      List<MetricData> result = new ArrayList<>(metrics.size());
-      for (MetricStorage metric : metrics) {
+      Collection<MetricStorage> storages =
+          Objects.requireNonNull(readerStorageRegistries.get(registeredReader)).getStorages();
+      List<MetricData> result = new ArrayList<>(storages.size());
+      for (MetricStorage storage : storages) {
         MetricData current =
-            metric.collectAndReset(
-                collectionInfo,
+            storage.collectAndReset(
                 meterProviderSharedState.getResource(),
                 getInstrumentationScopeInfo(),
                 meterProviderSharedState.getStartEpochNanos(),
-                epochNanos,
-                suppressSynchronousCollection);
+                epochNanos);
         // Ignore if the metric data doesn't have any data points, for example when aggregation is
         // Aggregation#drop()
         if (!current.isEmpty()) {
@@ -109,95 +116,73 @@ public class MeterSharedState {
     }
   }
 
+  /** Reset the meter state, clearing all registered callbacks and storages. */
+  public void resetForTest() {
+    synchronized (collectLock) {
+      synchronized (callbackLock) {
+        callbackRegistrations.clear();
+      }
+      this.readerStorageRegistries.values().forEach(MetricStorageRegistry::resetForTest);
+    }
+  }
+
   /** Registers new synchronous storage associated with a given instrument. */
   public final WriteableMetricStorage registerSynchronousMetricStorage(
       InstrumentDescriptor instrument, MeterProviderSharedState meterProviderSharedState) {
 
-    List<SynchronousMetricStorage> storages =
+    List<SynchronousMetricStorage> registeredStorages = new ArrayList<>();
+    for (RegisteredView registeredView :
         meterProviderSharedState
             .getViewRegistry()
-            .findViews(instrument, getInstrumentationScopeInfo())
-            .stream()
-            .map(
-                view ->
-                    SynchronousMetricStorage.create(
-                        view, instrument, meterProviderSharedState.getExemplarFilter()))
-            .filter(m -> !m.isEmpty())
-            .collect(toList());
-
-    List<SynchronousMetricStorage> registeredStorages = new ArrayList<>(storages.size());
-    for (SynchronousMetricStorage storage : storages) {
-      registeredStorages.add(getMetricStorageRegistry().register(storage));
+            .findViews(instrument, getInstrumentationScopeInfo())) {
+      if (Aggregation.drop() == registeredView.getView().getAggregation()) {
+        continue;
+      }
+      for (Map.Entry<RegisteredReader, MetricStorageRegistry> entry :
+          readerStorageRegistries.entrySet()) {
+        RegisteredReader reader = entry.getKey();
+        MetricStorageRegistry registry = entry.getValue();
+        registeredStorages.add(
+            registry.register(
+                SynchronousMetricStorage.create(
+                    reader,
+                    registeredView,
+                    instrument,
+                    meterProviderSharedState.getExemplarFilter())));
+      }
     }
 
     if (registeredStorages.size() == 1) {
       return registeredStorages.get(0);
     }
+
     return new MultiWritableMetricStorage(registeredStorages);
   }
 
-  /**
-   * Register the {@code long} callback for the {@code instrument} and establishes required
-   * asynchronous storage.
-   *
-   * <p>The callback will be invoked once per collection until unregistered via {@link
-   * #removeCallback(CallbackRegistration)}.
-   */
-  public final CallbackRegistration<ObservableLongMeasurement> registerLongAsynchronousInstrument(
-      InstrumentDescriptor instrument,
-      MeterProviderSharedState meterProviderSharedState,
-      Consumer<ObservableLongMeasurement> callback) {
-    List<AsynchronousMetricStorage<?, ?>> registeredStorages =
-        registerAsynchronousInstrument(instrument, meterProviderSharedState);
-
-    CallbackRegistration<ObservableLongMeasurement> registration =
-        CallbackRegistration.createLong(instrument, callback, registeredStorages);
-    synchronized (callbackLock) {
-      callbackRegistrations.add(registration);
-    }
-    return registration;
-  }
-
-  /**
-   * Register the {@code double} callback for the {@code instrument} and establishes required
-   * asynchronous storage.
-   *
-   * <p>The callback will be invoked once per collection until unregistered via {@link
-   * #removeCallback(CallbackRegistration)}.
-   */
-  public final CallbackRegistration<ObservableDoubleMeasurement>
-      registerDoubleAsynchronousInstrument(
-          InstrumentDescriptor instrument,
-          MeterProviderSharedState meterProviderSharedState,
-          Consumer<ObservableDoubleMeasurement> callback) {
-    List<AsynchronousMetricStorage<?, ?>> registeredStorages =
-        registerAsynchronousInstrument(instrument, meterProviderSharedState);
-
-    CallbackRegistration<ObservableDoubleMeasurement> registration =
-        CallbackRegistration.createDouble(instrument, callback, registeredStorages);
-    synchronized (callbackLock) {
-      callbackRegistrations.add(registration);
-    }
-    return registration;
-  }
-
-  private List<AsynchronousMetricStorage<?, ?>> registerAsynchronousInstrument(
+  /** Register new asynchronous storage associated with a given instrument. */
+  public final SdkObservableMeasurement registerObservableMeasurement(
       InstrumentDescriptor instrumentDescriptor,
       MeterProviderSharedState meterProviderSharedState) {
-    List<AsynchronousMetricStorage<?, ?>> storages =
+
+    List<AsynchronousMetricStorage<?, ?>> registeredStorages = new ArrayList<>();
+    for (RegisteredView registeredView :
         meterProviderSharedState
             .getViewRegistry()
-            .findViews(instrumentDescriptor, getInstrumentationScopeInfo())
-            .stream()
-            .map(view -> AsynchronousMetricStorage.create(view, instrumentDescriptor))
-            .filter(storage -> !storage.isEmpty())
-            .collect(toList());
-
-    List<AsynchronousMetricStorage<?, ?>> registeredStorages = new ArrayList<>(storages.size());
-    for (AsynchronousMetricStorage<?, ?> storage : storages) {
-      registeredStorages.add(getMetricStorageRegistry().register(storage));
+            .findViews(instrumentDescriptor, getInstrumentationScopeInfo())) {
+      if (Aggregation.drop() == registeredView.getView().getAggregation()) {
+        continue;
+      }
+      for (Map.Entry<RegisteredReader, MetricStorageRegistry> entry :
+          readerStorageRegistries.entrySet()) {
+        RegisteredReader reader = entry.getKey();
+        MetricStorageRegistry registry = entry.getValue();
+        registeredStorages.add(
+            registry.register(
+                AsynchronousMetricStorage.create(reader, registeredView, instrumentDescriptor)));
+      }
     }
 
-    return registeredStorages;
+    return SdkObservableMeasurement.create(
+        instrumentationScopeInfo, instrumentDescriptor, registeredStorages);
   }
 }

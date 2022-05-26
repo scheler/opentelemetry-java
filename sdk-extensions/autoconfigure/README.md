@@ -62,7 +62,7 @@ The [OpenTelemetry Protocol (OTLP)](https://github.com/open-telemetry/openteleme
 | otel.exporter.otlp.traces.certificate             | OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE             | The path to the file containing trusted certificates to use when verifying an OTLP trace server's TLS credentials. The file should contain one or more X.509 certificates in PEM format. By default the host platform's trusted root certificates are used.                                                                                                                                                          |
 | otel.exporter.otlp.metrics.certificate            | OTEL_EXPORTER_OTLP_METRICS_CERTIFICATE            | The path to the file containing trusted certificates to use when verifying an OTLP metric server's TLS credentials. The file should contain one or more X.509 certificates in PEM format. By default the host platform's trusted root certificates are used.                                                                                                                                                         |
 | otel.exporter.otlp.logs.certificate               | OTEL_EXPORTER_OTLP_LOGS_CERTIFICATE               | The path to the file containing trusted certificates to use when verifying an OTLP log server's TLS credentials. The file should contain one or more X.509 certificates in PEM format. By default the host platform's trusted root certificates are used.                                                                                                                                                            |
-| otel.exporter.otlp.client.key                     | OTEL_EXPORTER_OTLP_CERTIFICATE                    | The path to the file containing private client key to use when verifying an OTLP trace, metric, or log client's TLS credentials. The file should contain one private key PKCS8 PEM format. By default no client key is used.                                                                                                                                                                                         |
+| otel.exporter.otlp.client.key                     | OTEL_EXPORTER_OTLP_CLIENT_KEY                     | The path to the file containing private client key to use when verifying an OTLP trace, metric, or log client's TLS credentials. The file should contain one private key PKCS8 PEM format. By default no client key is used.                                                                                                                                                                                         |
 | otel.exporter.otlp.traces.client.key              | OTEL_EXPORTER_OTLP_TRACES_CLIENT_KEY              | The path to the file containing private client key to use when verifying an OTLP trace client's TLS credentials. The file should contain one private key PKCS8 PEM format. By default no client key file is used.                                                                                                                                                                                                    |
 | otel.exporter.otlp.metrics.client.key             | OTEL_EXPORTER_OTLP_METRICS_CLIENT_KEY             | The path to the file containing private client key to use when verifying an OTLP metric client's TLS credentials. The file should contain one private key PKCS8 PEM format. By default no client key file is used.                                                                                                                                                                                                   |
 | otel.exporter.otlp.logs.client.key                | OTEL_EXPORTER_OTLP_LOGS_CLIENT_KEY                | The path to the file containing private client key to use when verifying an OTLP log client's TLS credentials. The file should contain one private key PKCS8 PEM format. By default no client key file is used.                                                                                                                                                                                                      |
@@ -144,7 +144,6 @@ The logging exporter prints the name of the span along with its attributes to st
 | otel.traces.exporter=logging  | OTEL_TRACES_EXPORTER=logging  | Select the logging exporter for tracing                              |
 | otel.metrics.exporter=logging | OTEL_METRICS_EXPORTER=logging | Select the logging exporter for metrics                              |
 | otel.logs.exporter=logging    | OTEL_LOGS_EXPORTER=logging    | Select the logging exporter for logs                                 |
-| otel.exporter.logging.prefix  | OTEL_EXPORTER_LOGGING_PREFIX  | An optional string printed in front of the span name and attributes. |
 
 ## Propagator
 
@@ -236,16 +235,25 @@ Supported values for `otel.traces.sampler` are
 - "parentbased_always_off": ParentBased(root=AlwaysOffSampler)
 - "parentbased_traceidratio": ParentBased(root=TraceIdRatioBased). `otel.traces.sampler.arg` sets the ratio.
 
+## Attribute limits
+
+These properties can be used to control the maximum number and length of attributes.
+
+| System property                   | Environment variable              | Description                                                                                              |
+|-----------------------------------|-----------------------------------|----------------------------------------------------------------------------------------------------------|
+| otel.attribute.value.length.limit | OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT | The maximum length of attribute values. Applies to spans and logs. By default there is no limit.         |
+| otel.attribute.count.limit        | OTEL_ATTRIBUTE_COUNT_LIMIT        | The maximum number of attributes. Applies to spans, span events, span links, and logs. Default is `128`. |
+
 ## Span limits
 
-These properties can be used to control the maximum size of recordings per span.
+These properties can be used to control the maximum size of spans by placing limits on attributes, events, and links.
 
-| System property                        | Environment variable                   | Description                                                            |
-|----------------------------------------|----------------------------------------|------------------------------------------------------------------------|
-| otel.span.attribute.value.length.limit | OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT | The maximum length of attribute values. By default there is no limit.  |
-| otel.span.attribute.count.limit        | OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT        | The maximum number of attributes per span. Default is `128`.           |
-| otel.span.event.count.limit            | OTEL_SPAN_EVENT_COUNT_LIMIT            | The maximum number of events per span. Default is `128`.               |
-| otel.span.link.count.limit             | OTEL_SPAN_LINK_COUNT_LIMIT             | The maximum number of links per span. Default is `128`                 |
+| System property                        | Environment variable                   | Description                                                                                                                           |
+|----------------------------------------|----------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| otel.span.attribute.value.length.limit | OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT | The maximum length of span attribute values. Takes precedence over `otel.attribute.value.length.limit`. By default there is no limit. |
+| otel.span.attribute.count.limit        | OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT        | The maximum number of attributes per span. Takes precedence over `otel.attribute.count.limit`. Default is `128`.                      |
+| otel.span.event.count.limit            | OTEL_SPAN_EVENT_COUNT_LIMIT            | The maximum number of events per span. Default is `128`.                                                                              |
+| otel.span.link.count.limit             | OTEL_SPAN_LINK_COUNT_LIMIT             | The maximum number of links per span. Default is `128`                                                                                |
 
 ## Exemplars
 
